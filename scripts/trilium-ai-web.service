@@ -1,0 +1,31 @@
+[Unit]
+Description=Trilium AI Web Interface
+After=network.target docker.service trilium-ai-sync.service
+Requires=docker.service
+Wants=trilium-ai-sync.service
+
+[Service]
+Type=simple
+User=%INSTALL_USER%
+WorkingDirectory=%INSTALL_PATH%
+Environment="PATH=%INSTALL_PATH%/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=%UV_PATH% run trilium-ai web
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=trilium-ai-web
+
+# Restart policy
+Restart=always
+RestartSec=10s
+
+# Security settings
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%INSTALL_PATH%
+
+[Install]
+WantedBy=multi-user.target

@@ -98,7 +98,9 @@ sudo ./scripts/install-service.sh
 sudo systemctl status trilium-ai-sync.timer
 ```
 
-Your Trilium AI is now installed! The system will automatically sync every 30 minutes.
+Your Trilium AI is now installed! The system will:
+- Automatically sync notes every 30 minutes
+- Serve the web interface at http://YOUR_SERVER_IP:3000
 
 ---
 
@@ -212,13 +214,15 @@ sudo ./scripts/install-service.sh
 
 ## Systemd Services
 
-The deployment includes two systemd services:
+The deployment includes three systemd services:
 
 ### Service Files
 
 **1. trilium-ai-sync.service** - Performs incremental sync
 
 **2. trilium-ai-sync.timer** - Triggers sync every 30 minutes
+
+**3. trilium-ai-web.service** - Runs the web interface
 
 ### Service Management
 
@@ -266,6 +270,94 @@ Then reload:
 sudo systemctl daemon-reload
 sudo systemctl restart trilium-ai-sync.timer
 ```
+
+---
+
+## Web Interface
+
+The deployment includes a web interface accessible via browser.
+
+### Accessing the Web Interface
+
+Default URL: `http://YOUR_SERVER_IP:3000`
+
+### Configuration
+
+The web interface port can be configured in `config/config.yaml`:
+
+```yaml
+web:
+  enabled: true
+  host: "0.0.0.0"  # All interfaces
+  port: 3000       # Change if needed
+```
+
+### Changing the Port
+
+If port 3000 is already in use:
+
+1. Edit config:
+```bash
+nano /opt/trilium-ai/config/config.yaml
+```
+
+2. Change the port:
+```yaml
+web:
+  port: 8080  # or any available port
+```
+
+3. Restart service:
+```bash
+sudo systemctl restart trilium-ai-web.service
+```
+
+### Web Service Management
+
+```bash
+# Status
+sudo systemctl status trilium-ai-web.service
+
+# Logs
+sudo journalctl -u trilium-ai-web.service -f
+
+# Restart
+sudo systemctl restart trilium-ai-web.service
+
+# Stop
+sudo systemctl stop trilium-ai-web.service
+
+# Start
+sudo systemctl start trilium-ai-web.service
+```
+
+### Development Mode
+
+For development with auto-reload:
+
+```bash
+cd /opt/trilium-ai
+uv run trilium-ai web --reload
+```
+
+### API Access
+
+The web interface exposes REST API endpoints:
+
+```bash
+# Query notes
+curl -X POST http://localhost:3000/api/query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What are my notes about Python?"}'
+
+# Check status
+curl http://localhost:3000/api/status
+
+# Health check
+curl http://localhost:3000/health
+```
+
+See [WEB.md](WEB.md) for complete web interface documentation.
 
 ---
 

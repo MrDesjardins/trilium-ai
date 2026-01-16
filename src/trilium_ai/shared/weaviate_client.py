@@ -42,18 +42,32 @@ class WeaviateClient:
         if self._client is not None:
             return
 
+        # Parse URL to extract host and port
+        url_without_scheme = self.url.replace("http://", "").replace("https://", "")
+        host_port = url_without_scheme.split(":")
+        http_host = host_port[0]
+        http_port = int(host_port[1]) if len(host_port) > 1 else 8080
+        http_secure = self.url.startswith("https://")
+
         if self.api_key:
             self._client = weaviate.connect_to_custom(
-                http_host=self.url.replace("http://", "").replace("https://", ""),
-                http_port=8601,
-                http_secure=False,
-                grpc_host=self.url.replace("http://", "").replace("https://", ""),
+                http_host=http_host,
+                http_port=http_port,
+                http_secure=http_secure,
+                grpc_host=http_host,
                 grpc_port=50051,
-                grpc_secure=False,
+                grpc_secure=http_secure,
                 auth_credentials=Auth.api_key(self.api_key),
             )
         else:
-            self._client = weaviate.connect_to_local(host=self.url.split("://")[1].split(":")[0])
+            self._client = weaviate.connect_to_custom(
+                http_host=http_host,
+                http_port=http_port,
+                http_secure=http_secure,
+                grpc_host=http_host,
+                grpc_port=50051,
+                grpc_secure=http_secure,
+            )
 
         print(f"Connected to Weaviate at {self.url}")
 

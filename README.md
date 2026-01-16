@@ -51,6 +51,8 @@ RAG (Retrieval Augmented Generation) system for Trilium Notes that enables seman
 
 ## Features
 
+- **Web Interface**: Modern, responsive web UI for easy querying
+- **REST API**: Programmatic access via FastAPI endpoints
 - **Semantic Search**: Vector-based search across all your Trilium notes
 - **Incremental Indexing**: Efficiently sync only changed notes
 - **Hybrid Search**: Combine keyword and semantic search for better results
@@ -107,11 +109,23 @@ Edit `.env` with your API keys (OpenAI or Anthropic).
 uv run trilium-ai index --full
 ```
 
-### 6. Query
+### 6. Query Your Notes
 
+**Command Line:**
 ```bash
 uv run trilium-ai query "What are my notes about Python?"
 ```
+
+**Web Interface:**
+```bash
+# Start the web server
+uv run trilium-ai web
+
+# Or with auto-reload for development
+uv run trilium-ai web --reload
+```
+
+Then open http://localhost:3000 in your browser.
 
 ## Development
 
@@ -147,12 +161,15 @@ trilium-ai/
 ├── src/trilium_ai/
 │   ├── indexer/          # SQLite reader, chunker, embedder
 │   ├── gateway/          # LLM integration and retrieval
+│   ├── web/              # FastAPI web interface
+│   │   ├── static/       # CSS, JavaScript
+│   │   └── templates/    # HTML templates
 │   ├── shared/           # Shared utilities (Weaviate client, config)
 │   └── cli/              # CLI commands
 ├── tests/                # Test suite
 ├── config/               # Configuration files
 ├── docker/               # Docker Compose for Weaviate
-└── scripts/              # Utility scripts
+└── scripts/              # Deployment scripts
 ```
 
 ## CLI Commands
@@ -181,6 +198,19 @@ uv run trilium-ai query "your question" --top-k 10
 
 # Query specific model
 uv run trilium-ai query "your question" --model gpt-4-turbo
+```
+
+### Web Interface
+
+```bash
+# Start web server
+uv run trilium-ai web
+
+# Custom port
+uv run trilium-ai web --port 8080
+
+# Development mode with auto-reload
+uv run trilium-ai web --reload
 ```
 
 ### Management
@@ -225,11 +255,17 @@ sudo ./scripts/install-service.sh
 
 See **[DEPLOYMENT.md](DEPLOYMENT.md)** for comprehensive production deployment guide including:
 - Automated setup scripts
-- Systemd service installation
+- Systemd service installation (sync + web)
 - Auto-start on boot
 - Update procedures
 - Monitoring and troubleshooting
 - Security best practices
+
+See **[WEB.md](WEB.md)** for web interface documentation including:
+- Development and production setup
+- API endpoints and examples
+- Security considerations
+- Customization guide
 
 ## License
 

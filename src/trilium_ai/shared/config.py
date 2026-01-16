@@ -1,8 +1,10 @@
 """Configuration management using Pydantic Settings."""
 
+import os
 from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, Optional
 
+import yaml
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -65,6 +67,14 @@ class LoggingConfig(BaseSettings):
     file: Optional[str] = Field("logs/trilium-ai.log", description="Log file path")
 
 
+class WebConfig(BaseSettings):
+    """Web interface configuration."""
+
+    enabled: bool = Field(True, description="Enable web interface")
+    host: str = Field("0.0.0.0", description="Host to bind to")
+    port: int = Field(3000, description="Port to bind to")
+
+
 class Config(BaseSettings):
     """Main configuration."""
 
@@ -72,7 +82,7 @@ class Config(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         env_nested_delimiter="__",
-        yaml_file="config/config.yaml",
+        extra="ignore",
     )
 
     trilium: TriliumConfig
@@ -82,14 +92,30 @@ class Config(BaseSettings):
     llm: LLMConfig
     retrieval: RetrievalConfig
     logging: LoggingConfig
+    web: WebConfig
 
 
 _config: Optional[Config] = None
+
+
+def load_yaml_config(config_path: str = "config/config.yaml") -> Dict[str, Any]:
+    """Load configuration from YAML file."""
+    yaml_path = Path(config_path)
+    if not yaml_path.exists():
+        raise FileNotFoundError(f"Config file not found: {config_path}")
+
+    with open(yaml_path, "r") as f:
+        return yaml.safe_load(f)
 
 
 def get_config() -> Config:
     """Get or create the singleton configuration."""
     global _config
     if _config is None:
-        _config = Config()
+        # Load YAML configuration
+        config_path = os.getenv("TRILIUM_AI_CONFIG", "config/config.yaml")
+        yaml_config = load_yaml_config(config_path)
+
+        # Create config from YAML (environment variables will override via SettingsConfigDict)
+        _config = Config(**yaml_config)
     return _config

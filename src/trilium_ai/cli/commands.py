@@ -408,5 +408,43 @@ def reset() -> None:
             weaviate_client.disconnect()
 
 
+@cli.command()
+@click.option("--host", default=None, help="Host to bind to")
+@click.option("--port", default=None, type=int, help="Port to bind to")
+@click.option("--reload", is_flag=True, help="Enable auto-reload (development only)")
+def web(host: str | None, port: int | None, reload: bool) -> None:
+    """Start the web interface."""
+    try:
+        config = load_config()
+
+        # Get web config with overrides
+        web_config = config.get("web", {})
+        final_host = host or web_config.get("host", "0.0.0.0")
+        final_port = port or web_config.get("port", 3000)
+
+        click.echo(f"Starting Trilium AI web server...")
+        click.echo(f"Host: {final_host}")
+        click.echo(f"Port: {final_port}")
+        click.echo(f"URL: http://{final_host if final_host != '0.0.0.0' else 'localhost'}:{final_port}")
+        click.echo()
+
+        if reload:
+            click.echo("⚠️  Auto-reload enabled (development mode)")
+            click.echo()
+
+        import uvicorn
+
+        uvicorn.run(
+            "trilium_ai.web.app:app",
+            host=final_host,
+            port=final_port,
+            reload=reload,
+        )
+
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
+
+
 if __name__ == "__main__":
     cli()

@@ -82,3 +82,13 @@ logging:
 
   # Log file path (null for stdout only)
   file: "logs/trilium-ai.log"
+
+web:
+  # Enable web interface
+  enabled: true
+
+  # Host to bind to (0.0.0.0 for all interfaces, 127.0.0.1 for localhost only)
+  host: "0.0.0.0"
+
+  # Port for web interface (change if port is already in use)
+  port: 3000

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 Trilium AI</h1>
+            <p class="subtitle">Semantic search powered by RAG</p>
+            <div id="status" class="status"></div>
+        </header>
+
+        <main>
+            <div class="search-container">
+                <form id="query-form">
+                    <div class="input-group">
+                        <input
+                            type="text"
+                            id="query-input"
+                            placeholder="Ask a question about your notes..."
+                            autocomplete="off"
+                            required
+                        />
+                        <button type="submit" id="search-btn">
+                            <span class="btn-text">Search</span>
+                            <span class="spinner" style="display: none;">⟳</span>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="advanced-options">
+                    <details>
+                        <summary>Advanced Options</summary>
+                        <div class="options-grid">
+                            <div class="option">
+                                <label for="top-k">Results:</label>
+                                <input type="number" id="top-k" min="1" max="20" value="5" />
+                            </div>
+                        </div>
+                    </details>
+                </div>
+            </div>
+
+            <div id="results" class="results" style="display: none;">
+                <div class="answer-section">
+                    <h2>Answer</h2>
+                    <div id="answer" class="answer"></div>
+                </div>
+
+                <div class="sources-section">
+                    <h2>Sources</h2>
+                    <div id="sources" class="sources"></div>
+                </div>
+            </div>
+
+            <div id="error" class="error" style="display: none;"></div>
+
+            <div id="examples" class="examples">
+                <h3>Example queries:</h3>
+                <div class="example-chips">
+                    <button class="example-chip" data-query="What projects am I working on?">What projects am I working on?</button>
+                    <button class="example-chip" data-query="Show me my notes about Python">Show me my notes about Python</button>
+                    <button class="example-chip" data-query="What are my goals?">What are my goals?</button>
+                    <button class="example-chip" data-query="Summarize my meeting notes">Summarize my meeting notes</button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>
+                Trilium AI v0.1.0 |
+                <a href="https://github.com/YOUR_USERNAME/trilium-ai" target="_blank">GitHub</a>
+            </p>
+        </footer>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

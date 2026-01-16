@@ -48,18 +48,25 @@ echo
 # Create temporary service files with substituted values
 echo -e "${BLUE}Creating service files...${NC}"
 
-# Process service file
+# Process service files
 sed -e "s|%INSTALL_USER%|$ACTUAL_USER|g" \
     -e "s|%INSTALL_PATH%|$PROJECT_DIR|g" \
     -e "s|%UV_PATH%|$UV_PATH|g" \
     "$SCRIPT_DIR/trilium-ai-sync.service" > /tmp/trilium-ai-sync.service
 
+sed -e "s|%INSTALL_USER%|$ACTUAL_USER|g" \
+    -e "s|%INSTALL_PATH%|$PROJECT_DIR|g" \
+    -e "s|%UV_PATH%|$UV_PATH|g" \
+    "$SCRIPT_DIR/trilium-ai-web.service" > /tmp/trilium-ai-web.service
+
 # Copy service files to systemd
 cp /tmp/trilium-ai-sync.service /etc/systemd/system/
 cp "$SCRIPT_DIR/trilium-ai-sync.timer" /etc/systemd/system/
+cp /tmp/trilium-ai-web.service /etc/systemd/system/
 
 # Clean up temp files
 rm /tmp/trilium-ai-sync.service
+rm /tmp/trilium-ai-web.service
 
 echo -e "${GREEN}✓ Service files installed${NC}"
 
@@ -68,10 +75,12 @@ echo -e "${BLUE}Reloading systemd...${NC}"
 systemctl daemon-reload
 echo -e "${GREEN}✓ Systemd reloaded${NC}"
 
-# Enable and start timer
+# Enable and start services
 echo -e "${BLUE}Enabling services...${NC}"
 systemctl enable trilium-ai-sync.timer
 systemctl start trilium-ai-sync.timer
+systemctl enable trilium-ai-web.service
+systemctl start trilium-ai-web.service
 
 echo -e "${GREEN}✓ Services enabled and started${NC}"
 echo
@@ -80,20 +89,27 @@ echo
 echo -e "${BLUE}Service status:${NC}"
 systemctl status trilium-ai-sync.timer --no-pager || true
 echo
+systemctl status trilium-ai-web.service --no-pager || true
+echo
 
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}   Installation Complete!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo
 echo -e "${BLUE}Service management commands:${NC}"
-echo -e "  Status: ${YELLOW}sudo systemctl status trilium-ai-sync.timer${NC}"
-echo -e "  Logs: ${YELLOW}sudo journalctl -u trilium-ai-sync.service -f${NC}"
-echo -e "  Manual sync: ${YELLOW}sudo systemctl start trilium-ai-sync.service${NC}"
-echo -e "  Stop: ${YELLOW}sudo systemctl stop trilium-ai-sync.timer${NC}"
-echo -e "  Restart: ${YELLOW}sudo systemctl restart trilium-ai-sync.timer${NC}"
 echo
-echo -e "${BLUE}The service will:${NC}"
-echo -e "  - Run ${GREEN}5 minutes after system boot${NC}"
-echo -e "  - Run ${GREEN}every 30 minutes${NC} after that"
-echo -e "  - Auto-start on system reboot"
+echo -e "  ${YELLOW}Sync Service:${NC}"
+echo -e "    Status: ${YELLOW}sudo systemctl status trilium-ai-sync.timer${NC}"
+echo -e "    Logs: ${YELLOW}sudo journalctl -u trilium-ai-sync.service -f${NC}"
+echo -e "    Manual sync: ${YELLOW}sudo systemctl start trilium-ai-sync.service${NC}"
+echo
+echo -e "  ${YELLOW}Web Interface:${NC}"
+echo -e "    Status: ${YELLOW}sudo systemctl status trilium-ai-web.service${NC}"
+echo -e "    Logs: ${YELLOW}sudo journalctl -u trilium-ai-web.service -f${NC}"
+echo -e "    Restart: ${YELLOW}sudo systemctl restart trilium-ai-web.service${NC}"
+echo
+echo -e "${BLUE}Services configured:${NC}"
+echo -e "  - Sync: Runs ${GREEN}5 minutes after boot${NC}, then ${GREEN}every 30 minutes${NC}"
+echo -e "  - Web: Available at ${GREEN}http://localhost:3000${NC} (check config for port)"
+echo -e "  - Both auto-start on system reboot"
 echo
