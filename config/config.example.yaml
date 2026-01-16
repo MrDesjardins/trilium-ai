@@ -1,0 +1,84 @@
+# Trilium AI Configuration Example
+# Copy this file to config.yaml and update with your values
+
+trilium:
+  # Path to Trilium SQLite database
+  database_path: "/path/to/trilium/document.db"
+
+  # Trilium server URL for generating note links
+  # Set to your Trilium server address (e.g., "http://localhost:8080" or "http://10.0.0.181:8080")
+  server_url: "http://localhost:8080"
+
+  # Sync interval in seconds (for incremental updates)
+  sync_interval: 300
+
+weaviate:
+  # Weaviate connection settings
+  url: "http://localhost:8601"
+
+  # Optional: API key for authentication
+  api_key: null
+
+  # Collection name for storing note embeddings
+  collection_name: "TriliumNotes"
+
+  # Batch size for indexing
+  batch_size: 100
+
+embeddings:
+  # Embedding model to use
+  # Options: "sentence-transformers", "openai", "huggingface"
+  provider: "sentence-transformers"
+
+  # Model name (depends on provider)
+  # For sentence-transformers: "all-MiniLM-L6-v2", "all-mpnet-base-v2"
+  # For OpenAI: "text-embedding-3-small", "text-embedding-3-large"
+  model: "all-MiniLM-L6-v2"
+
+  # Dimension of embeddings (must match model)
+  dimension: 384
+
+chunking:
+  # Maximum chunk size in tokens
+  max_chunk_size: 512
+
+  # Overlap between chunks in tokens
+  chunk_overlap: 50
+
+  # Chunking strategy: "token", "sentence", "paragraph"
+  strategy: "sentence"
+
+llm:
+  # LLM provider: "openai", "anthropic"
+  provider: "openai"
+
+  # Model name
+  # OpenAI: "gpt-4-turbo", "gpt-3.5-turbo"
+  # Anthropic: "claude-3-5-sonnet-20241022", "claude-3-opus-20240229"
+  model: "gpt-4-turbo"
+
+  # Maximum tokens in response
+  max_tokens: 2000
+
+  # Temperature for generation
+  temperature: 0.7
+
+retrieval:
+  # Number of top results to retrieve
+  top_k: 5
+
+  # Minimum similarity score (0-1)
+  min_score: 0.7
+
+  # Search mode: "vector", "hybrid", "keyword"
+  mode: "hybrid"
+
+  # Alpha for hybrid search (0=keyword, 1=vector)
+  alpha: 0.75
+
+logging:
+  # Logging level: DEBUG, INFO, WARNING, ERROR
+  level: "INFO"
+
+  # Log file path (null for stdout only)
+  file: "logs/trilium-ai.log"

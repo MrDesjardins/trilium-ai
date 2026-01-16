@@ -1,0 +1,16 @@
+[Unit]
+Description=Trilium AI Sync Timer
+Requires=trilium-ai-sync.service
+
+[Timer]
+# Run 5 minutes after boot
+OnBootSec=5min
+
+# Run every 30 minutes
+OnUnitActiveSec=30min
+
+# If the system was off when a timer should have run, run it once when back online
+Persistent=true
+
+[Install]
+WantedBy=timers.target
