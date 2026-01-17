@@ -67,7 +67,7 @@ source $HOME/.local/bin/env
 ```bash
 # Clone to /opt/trilium-ai (recommended for system services)
 cd /opt
-sudo git clone https://github.com/YOUR_USERNAME/trilium-ai.git
+sudo git clone https://github.com/mrdesjardins/trilium-ai.git
 sudo chown -R $USER:$USER trilium-ai
 cd trilium-ai
 ```
@@ -127,7 +127,7 @@ sudo systemctl enable docker
 
 ```bash
 cd /opt
-sudo git clone https://github.com/YOUR_USERNAME/trilium-ai.git
+sudo git clone https://github.com/mrdesjardins/trilium-ai.git
 sudo chown -R $USER:$USER trilium-ai
 cd trilium-ai
 
@@ -694,5 +694,5 @@ Or access programmatically through the Python API.
 ## Support
 
 For issues and questions:
-- GitHub Issues: https://github.com/YOUR_USERNAME/trilium-ai/issues
+- GitHub Issues: https://github.com/mrdesjardins/trilium-ai/issues
 - Documentation: See README.md and CLAUDE.md

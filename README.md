@@ -242,7 +242,7 @@ For production deployment on Ubuntu Server with automated setup and systemd serv
 ```bash
 # Clone repository
 cd /opt
-sudo git clone https://github.com/YOUR_USERNAME/trilium-ai.git
+sudo git clone https://github.com/mrdesjardins/trilium-ai.git
 sudo chown -R $USER:$USER trilium-ai
 cd trilium-ai
 
