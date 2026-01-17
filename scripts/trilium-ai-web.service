@@ -9,6 +9,7 @@ Type=simple
 User=%INSTALL_USER%
 WorkingDirectory=%INSTALL_PATH%
 Environment="PATH=%INSTALL_PATH%/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="UV_NO_CACHE=1"
 ExecStart=%UV_PATH% run trilium-ai web
 
 # Logging
