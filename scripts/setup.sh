@@ -109,7 +109,7 @@ if [ ! -f "$PROJECT_DIR/.env" ]; then
 fi
 
 # Find Trilium database
-DEFAULT_TRILIUM_PATH="$HOME/.local/share/trilium-data/document.db"
+DEFAULT_TRILIUM_PATH="$HOME/trilium-data/document.db"
 echo
 echo -e "${YELLOW}Enter the path to your Trilium database:${NC}"
 echo -e "${YELLOW}(Press Enter to use: $DEFAULT_TRILIUM_PATH)${NC}"
