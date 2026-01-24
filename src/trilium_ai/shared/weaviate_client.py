@@ -8,7 +8,7 @@ from typing import Optional
 import weaviate
 from weaviate.classes.config import Configure, DataType, Property
 from weaviate.classes.init import Auth
-from weaviate.classes.query import MetadataQuery
+from weaviate.classes.query import Filter, MetadataQuery
 
 from trilium_ai.shared.models import Chunk
 
@@ -225,7 +225,7 @@ class WeaviateClient:
         collection = self._client.collections.get(self.collection_name)
 
         # Delete all objects with matching note_id
-        result = collection.data.delete_many(where={"path": ["note_id"], "operator": "Equal", "valueText": note_id})
+        result = collection.data.delete_many(where=Filter.by_property("note_id").equal(note_id))
 
         deleted_count = result.successful if hasattr(result, "successful") else 0
         print(f"Deleted {deleted_count} chunks for note {note_id}")
