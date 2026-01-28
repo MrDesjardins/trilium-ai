@@ -52,15 +52,14 @@ class LLMClient:
             self._client = Anthropic(api_key=api_key)
 
         elif self.provider == "gemini":
-            import google.generativeai as genai
+            from google import genai
 
             api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
             if not api_key:
                 raise ValueError(
                     "GEMINI_API_KEY or GOOGLE_API_KEY environment variable not set"
                 )
-            genai.configure(api_key=api_key)
-            self._client = genai.GenerativeModel(self.model)
+            self._client = genai.Client(api_key=api_key)
 
         else:
             raise ValueError(f"Unsupported LLM provider: {self.provider}")
@@ -161,17 +160,16 @@ Question: {query}"""
         Returns:
             Generated response
         """
-        # Gemini combines system prompt with user message
-        full_prompt = f"""{system_prompt}
+        from google.genai import types
 
-{user_message}"""
-
-        response = self._client.generate_content(
-            full_prompt,
-            generation_config={
-                "max_output_tokens": self.max_tokens,
-                "temperature": self.temperature,
-            },
+        response = self._client.models.generate_content(
+            model=self.model,
+            contents=user_message,
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                max_output_tokens=self.max_tokens,
+                temperature=self.temperature,
+            ),
         )
 
         return response.text
