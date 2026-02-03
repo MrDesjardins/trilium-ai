@@ -119,15 +119,39 @@ Question: {query}"""
         Returns:
             Generated response
         """
-        response = self._client.chat.completions.create(
-            model=self.model,
-            messages=[
+        # Newer models (gpt-4o, gpt-5, etc.) require max_completion_tokens
+        # Older models (gpt-3.5, gpt-4-turbo, etc.) use max_tokens
+        uses_completion_tokens = any(
+            self.model.startswith(prefix)
+            for prefix in ["gpt-4o", "gpt-5", "o1", "o3"]
+        )
+
+        # Some models (o1, o3, gpt-5-mini) don't support custom temperature
+        # and only accept the default value (1)
+        supports_temperature = not any(
+            self.model.startswith(prefix)
+            for prefix in ["o1", "o3", "gpt-5-mini"]
+        )
+
+        params = {
+            "model": self.model,
+            "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message},
             ],
-            max_tokens=self.max_tokens,
-            temperature=self.temperature,
-        )
+        }
+
+        # Add temperature only for models that support it
+        if supports_temperature:
+            params["temperature"] = self.temperature
+
+        # Add max tokens parameter based on model
+        if uses_completion_tokens:
+            params["max_completion_tokens"] = self.max_tokens
+        else:
+            params["max_tokens"] = self.max_tokens
+
+        response = self._client.chat.completions.create(**params)
 
         return response.choices[0].message.content or ""
 
