@@ -183,14 +183,31 @@ Edit `.env` file:
 nano .env
 ```
 
-Add your API keys:
+Configure your LLM provider, model, and API key:
 
 ```bash
-# Choose ONE provider (OpenAI, Anthropic, or Gemini)
-OPENAI_API_KEY=sk-...
+# LLM Configuration (overrides config.yaml)
+LLM_PROVIDER=gemini            # openai, anthropic, or gemini
+LLM_MODEL=gemini-2.5-flash     # See docs/MODEL_SETUP.md for all options
+# LLM_TEMPERATURE=0.7          # Optional: 0.0-1.0
+# LLM_MAX_TOKENS=2000          # Optional: max response tokens
+
+# API Keys - Choose provider matching LLM_PROVIDER above
+# For Gemini:
+GEMINI_API_KEY=your-key-here
+
+# For OpenAI:
+# OPENAI_API_KEY=sk-...
+
+# For Anthropic/Claude:
 # ANTHROPIC_API_KEY=sk-ant-...
-# GEMINI_API_KEY=...
 ```
+
+**Note:** The application automatically loads environment variables from `.env` file when it starts, so any changes to `LLM_PROVIDER` or `LLM_MODEL` will be picked up after restarting the services.
+
+See these guides for more details:
+- **[docs/MODEL_SETUP.md](docs/MODEL_SETUP.md)** - LLM model configuration
+- **[docs/SERVICE_ENV_SETUP.md](docs/SERVICE_ENV_SETUP.md)** - Service environment configuration
 
 ### Step 5: Initial Index
 
@@ -238,7 +255,7 @@ sudo systemctl status trilium-ai-sync.timer
 sudo systemctl status trilium-ai-sync.service
 
 # View logs
-sudo journalctl -u trilium-ai-sync.service -f
+sudo journalctl -u trilium-ai-sync.service -f -n 200
 
 # Manually trigger sync
 sudo systemctl start trilium-ai-sync.service
@@ -249,6 +266,23 @@ sudo systemctl start trilium-ai-sync.service
 Services are located in:
 - `/etc/systemd/system/trilium-ai-sync.service`
 - `/etc/systemd/system/trilium-ai-sync.timer`
+- `/etc/systemd/system/trilium-ai-web.service`
+
+**Environment Variables**: The application automatically loads the `.env` file from your project directory when it starts (via `python-dotenv` in `config.py`). This means:
+- Changes to `LLM_PROVIDER`, `LLM_MODEL`, or API keys in `.env` will be picked up after restarting the services
+- No need to modify service files or systemd configuration
+- The `WorkingDirectory` setting ensures the app finds `.env` in the project root
+
+To apply `.env` changes:
+
+```bash
+# Restart the web service
+sudo systemctl restart trilium-ai-web.service
+
+# Next sync run will pick up changes automatically
+# Or manually trigger a sync:
+sudo systemctl start trilium-ai-sync.service
+```
 
 To modify sync interval:
 

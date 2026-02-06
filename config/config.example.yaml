@@ -31,50 +31,66 @@ embeddings:
   provider: "sentence-transformers"
 
   # Model name (depends on provider)
-  # For sentence-transformers: "all-MiniLM-L6-v2", "all-mpnet-base-v2"
+  # For sentence-transformers: "all-mpnet-base-v2" (768D, recommended), "all-MiniLM-L6-v2" (384D, faster)
   # For OpenAI: "text-embedding-3-small", "text-embedding-3-large"
-  model: "all-MiniLM-L6-v2"
+  model: "all-mpnet-base-v2"
 
   # Dimension of embeddings (must match model)
-  dimension: 384
+  # all-mpnet-base-v2: 768, all-MiniLM-L6-v2: 384, text-embedding-3-small: 1536
+  dimension: 768
 
 chunking:
   # Maximum chunk size in tokens
-  max_chunk_size: 512
+  # Recommended: 768 for better context (512 for faster processing)
+  max_chunk_size: 768
 
   # Overlap between chunks in tokens
-  chunk_overlap: 50
+  # Recommended: 100 for good context continuity
+  chunk_overlap: 100
 
   # Chunking strategy: "token", "sentence", "paragraph"
   strategy: "sentence"
 
 llm:
-  # LLM provider: "openai", "anthropic"
+  # LLM provider: "openai", "anthropic", "gemini"
+  # Can be overridden with LLM_PROVIDER environment variable
   provider: "openai"
 
   # Model name
-  # OpenAI: "gpt-4-turbo", "gpt-3.5-turbo"
+  # OpenAI: "gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo", "gpt-5-mini"
   # Anthropic: "claude-3-5-sonnet-20241022", "claude-3-opus-20240229"
+  # Gemini: "gemini-2.5-flash", "gemini-1.5-pro", "gemini-1.5-flash", "gemini-2.0-flash-exp"
+  # Can be overridden with LLM_MODEL environment variable
   model: "gpt-4-turbo"
 
   # Maximum tokens in response
+  # Can be overridden with LLM_MAX_TOKENS environment variable
   max_tokens: 2000
 
-  # Temperature for generation
+  # Temperature for generation (0.0 = deterministic, 1.0 = creative)
+  # Can be overridden with LLM_TEMPERATURE environment variable
   temperature: 0.7
 
 retrieval:
   # Number of top results to retrieve
-  top_k: 5
+  top_k: 10
 
   # Minimum similarity score (0-1)
-  min_score: 0.7
+  # Recommended: 0.6 for balanced results
+  min_score: 0.6
 
   # Search mode: "vector", "hybrid", "keyword"
   mode: "hybrid"
 
   # Alpha for hybrid search (0=keyword, 1=vector)
-  alpha: 0.75
+  # 0.85 = mostly semantic, 0.5 = balanced, 0.3 = mostly keyword
+  alpha: 0.85
+
+  # Enable reranking for improved result quality
+  use_reranking: true
+
+  # Reranking model for scoring relevance
+  reranking_model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
 logging:
   # Logging level: DEBUG, INFO, WARNING, ERROR

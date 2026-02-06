@@ -96,12 +96,28 @@ docker compose up -d
 ### 4. Configure
 
 ```bash
-cp config/config.example.yaml config/config.yaml
 cp .env.example .env
 ```
 
-Edit `config/config.yaml` with your Trilium database path and preferences.
-Edit `.env` with your API keys (OpenAI or Anthropic).
+**Quick Setup with Environment Variables:**
+
+Edit `.env` and set your LLM provider, model, and API key:
+
+```bash
+# Example: Using Gemini 2.5 Flash (fast and cost-effective)
+LLM_PROVIDER=gemini
+LLM_MODEL=gemini-2.5-flash
+GEMINI_API_KEY=your-api-key-here
+```
+
+**Supported Providers:**
+- **OpenAI**: `gpt-4o`, `gpt-4-turbo`, `gpt-3.5-turbo`, `gpt-5-mini`
+- **Anthropic**: `claude-3-5-sonnet-20241022`, `claude-3-opus-20240229`
+- **Gemini**: `gemini-2.5-flash` (recommended), `gemini-1.5-pro`, `gemini-1.5-flash`
+
+See **[docs/MODEL_SETUP.md](docs/MODEL_SETUP.md)** for detailed model configuration guide.
+
+You'll also need to configure your Trilium database path in `config/config.yaml`.
 
 ### 5. Initial Index
 
@@ -225,14 +241,35 @@ uv run trilium-ai reset
 
 ## Configuration
 
-See `config/config.example.yaml` for all available configuration options.
+### Environment Variables (Recommended)
+
+The easiest way to configure Trilium AI is using environment variables in `.env`:
+
+```bash
+# LLM Configuration (override config.yaml)
+LLM_PROVIDER=gemini              # openai, anthropic, or gemini
+LLM_MODEL=gemini-2.5-flash       # See MODEL_SETUP.md for all options
+LLM_TEMPERATURE=0.7              # 0.0-1.0 (optional)
+LLM_MAX_TOKENS=2000             # Max response tokens (optional)
+
+# API Keys
+GEMINI_API_KEY=your-key-here    # For Gemini models
+OPENAI_API_KEY=sk-...           # For OpenAI models
+ANTHROPIC_API_KEY=sk-ant-...    # For Claude models
+```
+
+**See [docs/MODEL_SETUP.md](docs/MODEL_SETUP.md) for the complete model configuration guide.**
+
+### config.yaml
+
+See `config/config.yaml` for all available configuration options.
 
 Key configuration sections:
 - **trilium**: Database path and sync settings
 - **weaviate**: Vector database connection
 - **embeddings**: Embedding model and parameters
 - **chunking**: Text chunking strategy
-- **llm**: LLM provider and model settings
+- **llm**: LLM provider and model settings (can be overridden by env vars)
 - **retrieval**: Search parameters
 
 ## Production Deployment

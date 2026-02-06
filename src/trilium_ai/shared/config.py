@@ -5,8 +5,15 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import yaml
+from dotenv import load_dotenv
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Load .env file early
+_project_root = Path(__file__).parent.parent.parent.parent
+_env_file = _project_root / ".env"
+if _env_file.exists():
+    load_dotenv(_env_file)
 
 
 class TriliumConfig(BaseSettings):
@@ -45,6 +52,11 @@ class ChunkingConfig(BaseSettings):
 class LLMConfig(BaseSettings):
     """LLM configuration."""
 
+    model_config = SettingsConfigDict(
+        env_prefix="LLM_",
+        extra="ignore",
+    )
+
     provider: str = Field("openai", description="LLM provider")
     model: str = Field("gpt-4-turbo", description="LLM model")
     max_tokens: int = Field(2000, description="Maximum tokens in response")
@@ -58,6 +70,10 @@ class RetrievalConfig(BaseSettings):
     min_score: float = Field(0.7, description="Minimum similarity score")
     mode: str = Field("hybrid", description="Search mode")
     alpha: float = Field(0.75, description="Alpha for hybrid search")
+    use_reranking: bool = Field(False, description="Enable reranking with cross-encoder")
+    reranking_model: str = Field(
+        "cross-encoder/ms-marco-MiniLM-L-6-v2", description="Cross-encoder model for reranking"
+    )
 
 
 class LoggingConfig(BaseSettings):
@@ -79,7 +95,7 @@ class Config(BaseSettings):
     """Main configuration."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(Path.cwd() / ".env"),
         env_file_encoding="utf-8",
         env_nested_delimiter="__",
         extra="ignore",
@@ -115,6 +131,18 @@ def get_config() -> Config:
         # Load YAML configuration
         config_path = os.getenv("TRILIUM_AI_CONFIG", "config/config.yaml")
         yaml_config = load_yaml_config(config_path)
+
+        # Manually override with environment variables if present
+        # This ensures LLM_* env vars take precedence over YAML
+        if "llm" in yaml_config:
+            if os.getenv("LLM_PROVIDER"):
+                yaml_config["llm"]["provider"] = os.getenv("LLM_PROVIDER")
+            if os.getenv("LLM_MODEL"):
+                yaml_config["llm"]["model"] = os.getenv("LLM_MODEL")
+            if os.getenv("LLM_TEMPERATURE"):
+                yaml_config["llm"]["temperature"] = float(os.getenv("LLM_TEMPERATURE"))
+            if os.getenv("LLM_MAX_TOKENS"):
+                yaml_config["llm"]["max_tokens"] = int(os.getenv("LLM_MAX_TOKENS"))
 
         # Create config from YAML (environment variables will override via SettingsConfigDict)
         _config = Config(**yaml_config)

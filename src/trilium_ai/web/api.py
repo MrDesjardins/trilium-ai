@@ -80,6 +80,8 @@ async def query(request: QueryRequest) -> QueryResponse:
             min_score=config.retrieval.min_score,
             search_mode=config.retrieval.mode,
             alpha=config.retrieval.alpha,
+            use_reranking=config.retrieval.use_reranking,
+            reranking_model=config.retrieval.reranking_model,
         )
 
         # Retrieve relevant chunks

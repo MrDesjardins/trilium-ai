@@ -233,6 +233,10 @@ def query(
             min_score=effective_min_score,
             search_mode=retrieval_config.get("mode", "hybrid"),
             alpha=retrieval_config.get("alpha", 0.75),
+            use_reranking=retrieval_config.get("use_reranking", False),
+            reranking_model=retrieval_config.get(
+                "reranking_model", "cross-encoder/ms-marco-MiniLM-L-6-v2"
+            ),
         )
 
         click.echo(f"Searching for: {query_text}\n")

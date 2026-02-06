@@ -3,6 +3,7 @@
 import logging
 from typing import Optional
 
+from trilium_ai.gateway.reranker import Reranker
 from trilium_ai.indexer.embedder import Embedder
 from trilium_ai.shared.models import Chunk, SearchResult
 from trilium_ai.shared.weaviate_client import WeaviateClient
@@ -21,6 +22,8 @@ class Retriever:
         min_score: float = 0.5,
         search_mode: str = "hybrid",
         alpha: float = 0.75,
+        use_reranking: bool = False,
+        reranking_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2",
     ) -> None:
         """Initialize the retriever.
 
@@ -31,6 +34,8 @@ class Retriever:
             min_score: Minimum similarity score threshold
             search_mode: Search mode (vector, hybrid, keyword)
             alpha: Hybrid search alpha (0=keyword, 1=vector)
+            use_reranking: Enable reranking with cross-encoder
+            reranking_model: Cross-encoder model name for reranking
         """
         self.weaviate_client = weaviate_client
         self.embedder = embedder
@@ -38,6 +43,13 @@ class Retriever:
         self.min_score = min_score
         self.search_mode = search_mode
         self.alpha = alpha
+        self.use_reranking = use_reranking
+
+        # Initialize reranker if enabled
+        self._reranker: Optional[Reranker] = None
+        if use_reranking:
+            self._reranker = Reranker(model_name=reranking_model)
+            logger.info("Reranking enabled with model: %s", reranking_model)
 
     def search(
         self, query: str, top_k: Optional[int] = None, debug: bool = False
@@ -59,15 +71,38 @@ class Retriever:
             logger.info(f"Top-K: {k}")
             logger.info(f"Min score threshold: {self.min_score}")
             logger.info(f"Alpha (hybrid): {self.alpha}")
+            logger.info(f"Reranking: {'enabled' if self.use_reranking else 'disabled'}")
 
+        # If reranking is enabled, retrieve more initial results
+        initial_k = k * 3 if self.use_reranking else k
+
+        # Perform initial search
         if self.search_mode == "vector":
-            return self._vector_search(query, k, debug)
+            result = self._vector_search(query, initial_k, debug)
         elif self.search_mode == "hybrid":
-            return self._hybrid_search(query, k, debug)
+            result = self._hybrid_search(query, initial_k, debug)
         elif self.search_mode == "keyword":
-            return self._keyword_search(query, k, debug)
+            result = self._keyword_search(query, initial_k, debug)
         else:
             raise ValueError(f"Unknown search mode: {self.search_mode}")
+
+        # Apply reranking if enabled
+        if self.use_reranking and self._reranker and result.chunks:
+            if debug:
+                logger.info(f"Reranking {len(result.chunks)} results...")
+
+            ranked = self._reranker.rerank(query, result.chunks, top_k=k, debug=debug)
+            chunks = [chunk for chunk, _ in ranked]
+            scores = [float(score) for _, score in ranked]
+
+            result = SearchResult(
+                chunks=chunks, scores=scores, total_results=len(chunks)
+            )
+
+            if debug:
+                logger.info(f"After reranking: {len(result.chunks)} results")
+
+        return result
 
     def _vector_search(self, query: str, top_k: int, debug: bool = False) -> SearchResult:
         """Perform pure vector similarity search.

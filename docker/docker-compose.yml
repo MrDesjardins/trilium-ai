@@ -8,11 +8,30 @@ services:
       - "8601:8080"
       - "50051:50051"
     environment:
+      # Query settings
       QUERY_DEFAULTS_LIMIT: 25
+      QUERY_MAXIMUM_RESULTS: 10000
+
+      # Authentication
       AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+
+      # Persistence
       PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
+
+      # Vectorizer settings
       DEFAULT_VECTORIZER_MODULE: 'none'
       ENABLE_MODULES: 'text2vec-openai,text2vec-huggingface,generative-openai'
+
+      # HNSW index optimization for better search quality
+      # Higher values = better quality, more memory usage
+      HNSW_MAX_CONNECTIONS: '64'           # Default: 32, increased for better quality
+      HNSW_EF_CONSTRUCTION: '256'          # Default: 128, increased for better indexing
+      HNSW_EF: '128'                       # Default: -1 (dynamic), set for consistent performance
+
+      # Distance metric (cosine is best for most embeddings)
+      DEFAULT_DISTANCE_METRIC: 'cosine'
+
+      # Cluster settings
       CLUSTER_HOSTNAME: 'node1'
     volumes:
       - weaviate_data:/var/lib/weaviate

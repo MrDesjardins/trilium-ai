@@ -12,7 +12,7 @@ class LLMClient:
     def __init__(
         self,
         provider: str = "openai",
-        model: str = "gpt-4-turbo",
+        model: str = "gpt-5.2",
         max_tokens: int = 2000,
         temperature: float = 0.7,
     ) -> None:
@@ -186,8 +186,13 @@ Question: {query}"""
         """
         from google.genai import types
 
+        # Build the full model name if not already prefixed
+        model_name = self.model
+        if not model_name.startswith("models/"):
+            model_name = f"models/{model_name}"
+
         response = self._client.models.generate_content(
-            model=self.model,
+            model=model_name,
             contents=user_message,
             config=types.GenerateContentConfig(
                 system_instruction=system_prompt,
