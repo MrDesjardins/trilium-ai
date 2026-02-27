@@ -12,7 +12,7 @@ echo "Pushing to GitHub..."
 git push origin main
 
 echo "Deploying to $REMOTE_HOST..."
-ssh "$REMOTE_USER@$REMOTE_HOST" "bash -l $REMOTE_DIR/scripts/update.sh"
+ssh "$REMOTE_USER@$REMOTE_HOST" "cd $REMOTE_DIR && git pull origin main && bash -l $REMOTE_DIR/scripts/update.sh"
 
 echo ""
 echo "Deploy complete!"
