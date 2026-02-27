@@ -9,11 +9,8 @@ from dotenv import load_dotenv
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Load .env file early
-_project_root = Path(__file__).parent.parent.parent.parent
-_env_file = _project_root / ".env"
-if _env_file.exists():
-    load_dotenv(_env_file)
+# Load .env file from current working directory (set by systemd WorkingDirectory)
+load_dotenv()
 
 
 class TriliumConfig(BaseSettings):
