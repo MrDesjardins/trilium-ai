@@ -67,6 +67,12 @@ class RetrievalConfig(BaseSettings):
     min_score: float = Field(0.7, description="Minimum similarity score")
     mode: str = Field("hybrid", description="Search mode")
     alpha: float = Field(0.75, description="Alpha for hybrid search")
+    use_query_expansion: bool = Field(True, description="Enable deterministic synonym expansion")
+    synonyms: Dict[str, list[str]] = Field(
+        default_factory=dict, description="Synonym map used for query expansion"
+    )
+    max_expanded_queries: int = Field(5, description="Maximum number of expanded query variants")
+    group_by_note: bool = Field(True, description="Limit final results to one chunk per note")
     use_reranking: bool = Field(False, description="Enable reranking with cross-encoder")
     reranking_model: str = Field(
         "cross-encoder/ms-marco-MiniLM-L-6-v2", description="Cross-encoder model for reranking"
@@ -109,6 +115,41 @@ class Config(BaseSettings):
 
 
 _config: Optional[Config] = None
+
+
+def get_runtime_cache_dir(app_name: str = "trilium-ai") -> Path:
+    """Return a writable runtime cache directory.
+
+    Preference order:
+    1. `TRILIUM_AI_CACHE_DIR`
+    2. `XDG_CACHE_HOME/<app_name>`
+    3. `~/.cache/<app_name>`
+    4. `/tmp/<app_name>`
+    """
+    configured_cache_dir = os.getenv("TRILIUM_AI_CACHE_DIR")
+    candidates: list[Path] = []
+
+    if configured_cache_dir:
+        candidates.append(Path(configured_cache_dir).expanduser())
+
+    xdg_cache_home = os.getenv("XDG_CACHE_HOME")
+    if xdg_cache_home:
+        candidates.append(Path(xdg_cache_home).expanduser() / app_name)
+
+    candidates.append(Path.home() / ".cache" / app_name)
+    candidates.append(Path("/tmp") / app_name)
+
+    for candidate in candidates:
+        try:
+            candidate.mkdir(parents=True, exist_ok=True)
+            test_file = candidate / ".write-test"
+            test_file.write_text("ok")
+            test_file.unlink()
+            return candidate
+        except OSError:
+            continue
+
+    raise OSError("Unable to determine a writable runtime cache directory")
 
 
 def load_yaml_config(config_path: str = "config/config.yaml") -> Dict[str, Any]:

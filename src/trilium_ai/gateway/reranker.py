@@ -1,10 +1,12 @@
 """Reranker for improving search result quality using cross-encoder models."""
 
 import logging
+import os
 from typing import List, Tuple
 
 from sentence_transformers import CrossEncoder
 
+from trilium_ai.shared.config import get_runtime_cache_dir
 from trilium_ai.shared.models import Chunk
 
 logger = logging.getLogger(__name__)
@@ -37,8 +39,16 @@ class Reranker:
     def model(self) -> CrossEncoder:
         """Lazy load the cross-encoder model."""
         if self._model is None:
+            cache_dir = get_runtime_cache_dir() / "huggingface"
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            os.environ.setdefault("HF_HOME", str(cache_dir))
+            os.environ.setdefault("HUGGINGFACE_HUB_CACHE", str(cache_dir / "hub"))
+            os.environ.setdefault("TRANSFORMERS_CACHE", str(cache_dir / "transformers"))
+            os.environ.setdefault(
+                "SENTENCE_TRANSFORMERS_HOME", str(cache_dir / "sentence-transformers")
+            )
             logger.info(f"Loading cross-encoder model: {self.model_name}")
-            self._model = CrossEncoder(self.model_name)
+            self._model = CrossEncoder(self.model_name, cache_folder=str(cache_dir))
             logger.info("Cross-encoder model loaded successfully")
         return self._model
 
