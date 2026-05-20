@@ -33,6 +33,7 @@ app = FastAPI(
 BASE_DIR = Path(__file__).parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+STATIC_VERSION = str(int((BASE_DIR / "static" / "js" / "app.js").stat().st_mtime))
 
 # Include API routes
 app.include_router(api_router, prefix="/api")
@@ -46,6 +47,7 @@ async def index(request: Request) -> HTMLResponse:
         {
             "request": request,
             "title": "Trilium AI",
+            "static_version": STATIC_VERSION,
         },
     )
 
