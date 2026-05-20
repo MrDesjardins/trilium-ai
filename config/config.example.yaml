@@ -86,6 +86,21 @@ retrieval:
   # 0.85 = mostly semantic, 0.5 = balanced, 0.3 = mostly keyword
   alpha: 0.85
 
+  # Expand queries with configured synonym replacements
+  use_query_expansion: true
+
+  # Maximum number of query variants, including the original query
+  max_expanded_queries: 5
+
+  # Return at most one chunk per note in final results
+  group_by_note: true
+
+  # Deterministic synonym map for recall improvements
+  synonyms:
+    ai: ["artificial intelligence", "machine intelligence"]
+    llm: ["large language model", "language model"]
+    rag: ["retrieval augmented generation", "retrieval-augmented generation"]
+
   # Enable reranking for improved result quality
   use_reranking: true
 

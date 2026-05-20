@@ -43,6 +43,18 @@ def load_config() -> dict:
                 "dimension": 384,
             },
             "chunking": {"max_chunk_size": 512, "chunk_overlap": 50, "strategy": "sentence"},
+            "retrieval": {
+                "top_k": 5,
+                "min_score": 0.7,
+                "mode": "hybrid",
+                "alpha": 0.75,
+                "use_query_expansion": True,
+                "synonyms": {},
+                "max_expanded_queries": 5,
+                "group_by_note": True,
+                "use_reranking": False,
+                "reranking_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+            },
         }
 
     with open(config_path) as f:
@@ -233,6 +245,10 @@ def query(
             min_score=effective_min_score,
             search_mode=retrieval_config.get("mode", "hybrid"),
             alpha=retrieval_config.get("alpha", 0.75),
+            use_query_expansion=retrieval_config.get("use_query_expansion", True),
+            synonyms=retrieval_config.get("synonyms", {}),
+            max_expanded_queries=retrieval_config.get("max_expanded_queries", 5),
+            group_by_note=retrieval_config.get("group_by_note", True),
             use_reranking=retrieval_config.get("use_reranking", False),
             reranking_model=retrieval_config.get(
                 "reranking_model", "cross-encoder/ms-marco-MiniLM-L-6-v2"

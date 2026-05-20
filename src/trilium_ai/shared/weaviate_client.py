@@ -3,7 +3,7 @@
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import weaviate
 from weaviate.classes.config import Configure, DataType, Property
@@ -36,6 +36,25 @@ class WeaviateClient:
         self.collection_name = collection_name
         self.sync_state_file = Path(sync_state_file)
         self._client: Optional[weaviate.WeaviateClient] = None
+
+    def _read_sync_state(self) -> dict[str, Any]:
+        """Read sync state from disk."""
+        if not self.sync_state_file.exists():
+            return {}
+
+        try:
+            with open(self.sync_state_file, "r") as f:
+                state = json.load(f)
+                return state if isinstance(state, dict) else {}
+        except (json.JSONDecodeError, OSError):
+            return {}
+
+    def _write_sync_state(self, state: dict[str, Any]) -> None:
+        """Persist sync state to disk."""
+        self.sync_state_file.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(self.sync_state_file, "w") as f:
+            json.dump(state, f, indent=2)
 
     def connect(self) -> None:
         """Connect to Weaviate."""
@@ -118,6 +137,11 @@ class WeaviateClient:
                     description="Chunk content",
                 ),
                 Property(
+                    name="retrieval_text",
+                    data_type=DataType.TEXT,
+                    description="Normalized text used for embeddings and retrieval",
+                ),
+                Property(
                     name="chunk_index",
                     data_type=DataType.INT,
                     description="Chunk index in note",
@@ -196,6 +220,7 @@ class WeaviateClient:
                         "note_id": chunk.note_id,
                         "title": chunk.title,
                         "content": chunk.content,
+                        "retrieval_text": chunk.metadata.get("retrieval_text", chunk.content),
                         "chunk_index": chunk.chunk_index,
                         "note_type": chunk.metadata.get("note_type", "text"),
                         "date_modified": chunk.metadata.get("date_modified", ""),
@@ -251,17 +276,12 @@ class WeaviateClient:
         Returns:
             Last sync time or None if never synced
         """
-        if not self.sync_state_file.exists():
-            return None
-
         try:
-            with open(self.sync_state_file, "r") as f:
-                state = json.load(f)
-                last_sync_str = state.get("last_sync_time")
-                if last_sync_str:
-                    return datetime.fromisoformat(last_sync_str)
-        except (json.JSONDecodeError, ValueError, KeyError):
-            # Invalid state file, treat as no sync
+            state = self._read_sync_state()
+            last_sync_str = state.get("last_sync_time")
+            if last_sync_str:
+                return datetime.fromisoformat(last_sync_str)
+        except ValueError:
             return None
 
         return None
@@ -272,13 +292,52 @@ class WeaviateClient:
         Args:
             sync_time: Timestamp to store
         """
-        state = {"last_sync_time": sync_time.isoformat()}
+        state = self._read_sync_state()
+        state["last_sync_time"] = sync_time.isoformat()
+        self._write_sync_state(state)
 
-        # Create parent directory if it doesn't exist
-        self.sync_state_file.parent.mkdir(parents=True, exist_ok=True)
+    def record_sync_result(
+        self,
+        *,
+        sync_time: datetime,
+        notes_synced: int,
+        chunks_created: int,
+        chunks_indexed: int,
+        last_note_updated_at: Optional[datetime],
+    ) -> None:
+        """Persist summary data for a sync run."""
+        state = self._read_sync_state()
 
-        with open(self.sync_state_file, "w") as f:
-            json.dump(state, f, indent=2)
+        history = state.get("sync_history", [])
+        if not isinstance(history, list):
+            history = []
+
+        history.append(
+            {
+                "sync_time": sync_time.isoformat(),
+                "notes_synced": notes_synced,
+                "chunks_created": chunks_created,
+                "chunks_indexed": chunks_indexed,
+                "last_note_updated_at": (
+                    last_note_updated_at.isoformat() if last_note_updated_at else None
+                ),
+            }
+        )
+
+        state["last_sync_time"] = sync_time.isoformat()
+        state["last_sync_notes_synced"] = notes_synced
+        state["last_sync_chunks_created"] = chunks_created
+        state["last_sync_chunks_indexed"] = chunks_indexed
+        state["last_note_updated_at"] = (
+            last_note_updated_at.isoformat() if last_note_updated_at else state.get("last_note_updated_at")
+        )
+        state["sync_history"] = history[-100:]
+
+        self._write_sync_state(state)
+
+    def get_sync_state(self) -> dict[str, Any]:
+        """Return the raw sync state data."""
+        return self._read_sync_state()
 
     def search_similar(
         self, query_vector: list[float], limit: int = 5, min_score: float = 0.7
@@ -321,6 +380,9 @@ class WeaviateClient:
                         "date_modified": obj.properties.get("date_modified", ""),
                         "path": obj.properties.get("path", ""),
                         "note_id_path": obj.properties.get("note_id_path", ""),
+                        "retrieval_text": obj.properties.get(
+                            "retrieval_text", obj.properties.get("content", "")
+                        ),
                     },
                 )
                 results.append((chunk, score))

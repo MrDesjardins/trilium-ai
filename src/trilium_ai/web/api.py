@@ -1,6 +1,7 @@
 """API routes for Trilium AI web interface."""
 
 import logging
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
@@ -40,6 +41,9 @@ class StatusResponse(BaseModel):
     weaviate_connected: bool
     total_chunks: int
     config_valid: bool
+    last_sync_time: Optional[datetime] = None
+    last_sync_notes_synced: int = 0
+    last_note_updated_at: Optional[datetime] = None
 
 
 @router.post("/query", response_model=QueryResponse)
@@ -80,6 +84,10 @@ async def query(request: QueryRequest) -> QueryResponse:
             min_score=config.retrieval.min_score,
             search_mode=config.retrieval.mode,
             alpha=config.retrieval.alpha,
+            use_query_expansion=config.retrieval.use_query_expansion,
+            synonyms=config.retrieval.synonyms,
+            max_expanded_queries=config.retrieval.max_expanded_queries,
+            group_by_note=config.retrieval.group_by_note,
             use_reranking=config.retrieval.use_reranking,
             reranking_model=config.retrieval.reranking_model,
         )
@@ -165,16 +173,19 @@ async def status() -> StatusResponse:
     try:
         config = get_config()
 
+        # Read sync metadata from local state even if Weaviate is unavailable.
+        weaviate_client = get_weaviate_client(
+            url=config.weaviate.url,
+            api_key=config.weaviate.api_key,
+            collection_name=config.weaviate.collection_name,
+        )
+        sync_state = weaviate_client.get_sync_state()
+
         # Check Weaviate connection
         weaviate_connected = False
         total_chunks = 0
 
         try:
-            weaviate_client = get_weaviate_client(
-                url=config.weaviate.url,
-                api_key=config.weaviate.api_key,
-                collection_name=config.weaviate.collection_name,
-            )
             weaviate_client.connect()
             total_chunks = weaviate_client.get_total_chunks()
             weaviate_connected = True
@@ -182,10 +193,27 @@ async def status() -> StatusResponse:
         except Exception as e:
             logger.warning(f"Weaviate connection failed: {e}")
 
+        last_sync_time = None
+        if sync_state.get("last_sync_time"):
+            try:
+                last_sync_time = datetime.fromisoformat(sync_state["last_sync_time"])
+            except ValueError:
+                last_sync_time = None
+
+        last_note_updated_at = None
+        if sync_state.get("last_note_updated_at"):
+            try:
+                last_note_updated_at = datetime.fromisoformat(sync_state["last_note_updated_at"])
+            except ValueError:
+                last_note_updated_at = None
+
         return StatusResponse(
             weaviate_connected=weaviate_connected,
             total_chunks=total_chunks,
             config_valid=True,
+            last_sync_time=last_sync_time,
+            last_sync_notes_synced=int(sync_state.get("last_sync_notes_synced", 0) or 0),
+            last_note_updated_at=last_note_updated_at,
         )
 
     except Exception as e:
@@ -194,4 +222,7 @@ async def status() -> StatusResponse:
             weaviate_connected=False,
             total_chunks=0,
             config_valid=False,
+            last_sync_time=None,
+            last_sync_notes_synced=0,
+            last_note_updated_at=None,
         )

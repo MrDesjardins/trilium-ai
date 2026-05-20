@@ -72,6 +72,12 @@ header .subtitle {
     background: rgba(231, 76, 60, 0.3);
 }
 
+.sync-details {
+    margin-top: 12px;
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.92);
+}
+
 main {
     background: var(--bg);
     border-radius: 16px;

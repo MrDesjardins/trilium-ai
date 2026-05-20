@@ -11,6 +11,7 @@ const sourcesDiv = document.getElementById('sources');
 const errorDiv = document.getElementById('error');
 const examplesDiv = document.getElementById('examples');
 const statusDiv = document.getElementById('status');
+const syncDetailsDiv = document.getElementById('sync-details');
 const btnText = searchBtn.querySelector('.btn-text');
 const spinner = searchBtn.querySelector('.spinner');
 
@@ -37,14 +38,54 @@ async function checkStatus() {
         if (data.weaviate_connected) {
             statusDiv.textContent = `✓ Connected | ${data.total_chunks.toLocaleString()} chunks indexed`;
             statusDiv.className = 'status connected';
+            syncDetailsDiv.textContent = buildSyncDetails(data);
         } else {
             statusDiv.textContent = '✗ Disconnected from Weaviate';
             statusDiv.className = 'status disconnected';
+            syncDetailsDiv.textContent = '';
         }
     } catch (error) {
         statusDiv.textContent = '✗ Error checking status';
         statusDiv.className = 'status disconnected';
+        syncDetailsDiv.textContent = '';
     }
+}
+
+function formatDateTime(value) {
+    if (!value) return null;
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+
+    return new Intl.DateTimeFormat(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZoneName: 'short',
+    }).format(date);
+}
+
+function buildSyncDetails(data) {
+    const details = [];
+    const lastSyncTime = formatDateTime(data.last_sync_time);
+    const lastNoteUpdatedAt = formatDateTime(data.last_note_updated_at);
+
+    if (lastSyncTime) {
+        details.push(`Last sync at ${lastSyncTime}`);
+    }
+
+    details.push(`Last sync processed ${data.last_sync_notes_synced ?? 0} notes`);
+
+    if (lastNoteUpdatedAt) {
+        details.push(`Last note updated at ${lastNoteUpdatedAt}`);
+    } else {
+        details.push('Last note updated at unknown');
+    }
+
+    return details.join(' | ');
 }
 
 // Handle form submission

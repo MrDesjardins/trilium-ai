@@ -6,6 +6,28 @@ from typing import Iterator
 from trilium_ai.shared.models import Chunk, Note
 
 
+def _normalize_search_text(text: str) -> str:
+    """Normalize text for retrieval-friendly indexing."""
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
+
+
+def build_retrieval_text(
+    title: str,
+    path: str,
+    note_type: str,
+    body: str,
+) -> str:
+    """Build enriched retrieval text for embedding and keyword search."""
+    sections = [f"Title: {title}"]
+    if path:
+        sections.append(f"Path: {path}")
+    if note_type:
+        sections.append(f"Note Type: {note_type}")
+    sections.append(f"Content: {body}")
+    return _normalize_search_text("\n".join(sections))
+
+
 class TextChunker:
     """Chunks text into smaller pieces for embedding."""
 
@@ -68,24 +90,17 @@ class TextChunker:
         if not content or not content.strip():
             return
 
-        # Build context prefix from path and title for better semantic search
-        # This helps find notes when searching for parent topics
-        context_parts = []
-        if note.path:
-            context_parts.append(f"Location: {note.path}")
-        context_parts.append(f"Title: {note.title}")
-        context_prefix = "\n".join(context_parts) + "\n\n"
-
-        # Account for context prefix tokens
-        context_tokens = self._estimate_tokens(context_prefix)
-        available_tokens = self.max_chunk_size - context_tokens
+        # Reserve space for enriched retrieval text that includes note metadata.
+        metadata_prefix = build_retrieval_text(note.title, note.path, note.type, "")
+        available_tokens = self.max_chunk_size - self._estimate_tokens(metadata_prefix)
+        available_tokens = max(available_tokens, 1)
 
         # Split content into sentences
         sentences = self._split_into_sentences(content)
 
         # If content is very short or no sentences detected, use as single chunk
         if not sentences or self._estimate_tokens(content) <= available_tokens:
-            chunk_content = context_prefix + content
+            chunk_content = content.strip()
             yield Chunk(
                 chunk_id=f"{note.note_id}_0",
                 note_id=note.note_id,
@@ -97,6 +112,9 @@ class TextChunker:
                     "date_modified": note.utc_date_modified.isoformat(),
                     "path": note.path,
                     "id_path": note.id_path,
+                    "retrieval_text": build_retrieval_text(
+                        note.title, note.path, note.type, chunk_content
+                    ),
                 },
             )
             return
@@ -107,7 +125,7 @@ class TextChunker:
         current_chunk: list[str] = []
         current_tokens = 0
 
-        for i, sentence in enumerate(sentences):
+        for sentence in sentences:
             sentence_tokens = self._estimate_tokens(sentence)
 
             # If single sentence exceeds max size, split it by characters
@@ -115,7 +133,7 @@ class TextChunker:
                 # First, yield current chunk if not empty
                 if current_chunk:
                     chunk_text = " ".join(current_chunk)
-                    chunk_content = context_prefix + chunk_text
+                    chunk_content = chunk_text.strip()
                     chunks.append((chunk_index, chunk_content))
                     chunk_index += 1
                     current_chunk = []
@@ -124,9 +142,8 @@ class TextChunker:
                 # Split long sentence into character chunks
                 max_chars = available_tokens * 4
                 for j in range(0, len(sentence), max_chars):
-                    sub_chunk = sentence[j:j + max_chars]
-                    chunk_content = context_prefix + sub_chunk
-                    chunks.append((chunk_index, chunk_content))
+                    sub_chunk = sentence[j:j + max_chars].strip()
+                    chunks.append((chunk_index, sub_chunk))
                     chunk_index += 1
                 continue
 
@@ -134,7 +151,7 @@ class TextChunker:
             if current_tokens + sentence_tokens > available_tokens and current_chunk:
                 # Yield current chunk
                 chunk_text = " ".join(current_chunk)
-                chunk_content = context_prefix + chunk_text
+                chunk_content = chunk_text.strip()
                 chunks.append((chunk_index, chunk_content))
                 chunk_index += 1
 
@@ -160,7 +177,7 @@ class TextChunker:
         # Don't forget the last chunk
         if current_chunk:
             chunk_text = " ".join(current_chunk)
-            chunk_content = context_prefix + chunk_text
+            chunk_content = chunk_text.strip()
             chunks.append((chunk_index, chunk_content))
 
         # Yield all chunks
@@ -176,5 +193,8 @@ class TextChunker:
                     "date_modified": note.utc_date_modified.isoformat(),
                     "path": note.path,
                     "id_path": note.id_path,
+                    "retrieval_text": build_retrieval_text(
+                        note.title, note.path, note.type, content
+                    ),
                 },
             )

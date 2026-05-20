@@ -77,7 +77,7 @@ class TriliumIndexer:
             # Collect chunks and texts for batch embedding
             for chunk in chunks:
                 all_chunks.append(chunk)
-                all_texts.append(chunk.content)
+                all_texts.append(chunk.metadata.get("retrieval_text", chunk.content))
 
             # Process batch when we reach batch size
             if len(all_chunks) >= self.batch_size:
@@ -96,8 +96,15 @@ class TriliumIndexer:
         print(f"Chunks created: {total_chunks_created}")
         print(f"Chunks indexed: {total_chunks_indexed}")
 
-        # Update last sync time
-        self.weaviate_client.set_last_sync_time(datetime.now(timezone.utc))
+        sync_time = datetime.now(timezone.utc)
+        last_note_updated_at = max(note.utc_date_modified for note in notes)
+        self.weaviate_client.record_sync_result(
+            sync_time=sync_time,
+            notes_synced=len(notes),
+            chunks_created=total_chunks_created,
+            chunks_indexed=total_chunks_indexed,
+            last_note_updated_at=last_note_updated_at,
+        )
 
         return {
             "notes_read": len(notes),
@@ -135,8 +142,14 @@ class TriliumIndexer:
 
         if not notes:
             print("No notes to sync")
-            # Update sync time even if no changes, so next sync doesn't re-check same window
-            self.weaviate_client.set_last_sync_time(datetime.now(timezone.utc))
+            sync_time = datetime.now(timezone.utc)
+            self.weaviate_client.record_sync_result(
+                sync_time=sync_time,
+                notes_synced=0,
+                chunks_created=0,
+                chunks_indexed=0,
+                last_note_updated_at=None,
+            )
             return {"notes_read": 0, "chunks_created": 0, "chunks_indexed": 0}
 
         total_chunks_created = 0
@@ -152,7 +165,7 @@ class TriliumIndexer:
 
             if chunks:
                 # Generate embeddings
-                texts = [chunk.content for chunk in chunks]
+                texts = [chunk.metadata.get("retrieval_text", chunk.content) for chunk in chunks]
                 embeddings = self.embedder.embed_batch(texts, batch_size=self.batch_size)
 
                 # Insert into Weaviate
@@ -166,8 +179,15 @@ class TriliumIndexer:
         print(f"Chunks created: {total_chunks_created}")
         print(f"Chunks indexed: {total_chunks_indexed}")
 
-        # Update last sync time
-        self.weaviate_client.set_last_sync_time(datetime.now(timezone.utc))
+        sync_time = datetime.now(timezone.utc)
+        last_note_updated_at = max(note.utc_date_modified for note in notes)
+        self.weaviate_client.record_sync_result(
+            sync_time=sync_time,
+            notes_synced=len(notes),
+            chunks_created=total_chunks_created,
+            chunks_indexed=total_chunks_indexed,
+            last_note_updated_at=last_note_updated_at,
+        )
 
         return {
             "notes_read": len(notes),

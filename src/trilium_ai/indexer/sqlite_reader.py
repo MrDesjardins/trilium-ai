@@ -174,7 +174,7 @@ class TriliumSQLiteReader:
             LEFT JOIN blobs b ON n.blobId = b.blobId
             WHERE n.isDeleted = 0
                 AND n.type IN ('text', 'code')
-                AND n.utcDateModified > ?
+                AND julianday(n.utcDateModified) > julianday(?)
                 AND NOT EXISTS (
                     SELECT 1 FROM attributes a
                     WHERE a.noteId = n.noteId
